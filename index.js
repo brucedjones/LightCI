@@ -3,14 +3,17 @@ const async = require('async')
 const clone = require('git-clone');
 const exec = require('child_process').exec;
 const fs = require('fs.extra');
+require('console-stamp')(console, {pattern:'yyyy/mm/dd HH:MM:ss', labelPrefix: '', labelSuffix: ''});
 
 const conf = require('./light.json')
 
 const github = new GitHubApi();
 
-github.authenticate(conf.authentication);
+if(!conf.owner) {console.error('No repo owner specified'); return 1;}
+if(!conf.authentication) {console.error('No authentication method specified'); return 1;}
+if(!conf.frequency) {console.warn('No frequency specified, defaulting to 10 minute checking intervals'); conf.frequency = 600000}
 
-var jobsToDo = [];
+github.authenticate(conf.authentication);
 
 var getRepos = function() {
     return github.repos.getAll({per_page:100}).then(res=>{
@@ -27,6 +30,7 @@ var getRepos = function() {
 
 var selectReposToWatch = function (ownedRepos){
     return new Promise((resolve,reject)=>{
+
         var watchedRepos = [];
         async.each(ownedRepos,(repo,callback)=>{
             github.repos.getContent({owner:conf.owner, repo:repo.name, path: ''}).then(res=>{
@@ -83,10 +87,16 @@ var runJobs = function(jobsToDo){
             if(buildResult.success) {
                 github.repos.createStatus({owner:conf.owner, repo:repo.name,sha:repo.latestCommit.sha,ref:repo.latestCommit.sha,state:'success'});
                 closeBuildIssues(repo,repo.latestCommit.sha);
+                console.log('Build succeeded for ' + repo.full_name)
             }
             else {
                 github.repos.createStatus({owner:conf.owner, repo:repo.name,sha:repo.latestCommit.sha,ref:repo.latestCommit.sha,state:"failure"});
                 createIssue(repo,repo.latestCommit.sha,buildResult.stdout,buildResult.stderr,repo.latestCommit.author.login);
+                console.log('Build failed for ' + repo.full_name);
+                console.log('stdout:');
+                console.log(buildResult.stdout);
+                console.log('stderr:');
+                console.log(buildResult.stderr);
             }
         });
     });
@@ -112,6 +122,8 @@ var closeBuildIssues = function(repo, fixedBy){
 
 var runJob = function(repo){
     return new Promise((resolve,reject)=>{
+        console.log('Running build for ' + repo.full_name)
+
         var localPath = './work/' + repo.name + '/';
         fs.rmrfSync(localPath);
         clone(repo.html_url,localPath,{},(err)=>{
@@ -129,95 +141,29 @@ var runJob = function(repo){
     });
 }
 
-// repo = { id: 113466620,
-//     name: 'AA',
-//     full_name: 'LightCITest/AA',
-//     owner:
-//      { login: 'LightCITest',
-//        id: 34345690,
-//        avatar_url: 'https://avatars3.githubusercontent.com/u/34345690?v=4',
-//        gravatar_id: '',
-//        url: 'https://api.github.com/users/LightCITest',
-//        html_url: 'https://github.com/LightCITest',
-//        followers_url: 'https://api.github.com/users/LightCITest/followers',
-//        following_url: 'https://api.github.com/users/LightCITest/following{/other_user}',
-//        gists_url: 'https://api.github.com/users/LightCITest/gists{/gist_id}',
-//        starred_url: 'https://api.github.com/users/LightCITest/starred{/owner}{/repo}',
-//        subscriptions_url: 'https://api.github.com/users/LightCITest/subscriptions',
-//        organizations_url: 'https://api.github.com/users/LightCITest/orgs',
-//        repos_url: 'https://api.github.com/users/LightCITest/repos',
-//        events_url: 'https://api.github.com/users/LightCITest/events{/privacy}',
-//        received_events_url: 'https://api.github.com/users/LightCITest/received_events',
-//        type: 'Organization',
-//        site_admin: false },
-//     private: false,
-//     html_url: 'https://github.com/LightCITest/AA',
-//     description: null,
-//     fork: false,
-//     url: 'https://api.github.com/repos/LightCITest/AA',
-//     forks_url: 'https://api.github.com/repos/LightCITest/AA/forks',
-//     keys_url: 'https://api.github.com/repos/LightCITest/AA/keys{/key_id}',
-//     collaborators_url: 'https://api.github.com/repos/LightCITest/AA/collaborators{/collaborator}',
-//     teams_url: 'https://api.github.com/repos/LightCITest/AA/teams',
-//     hooks_url: 'https://api.github.com/repos/LightCITest/AA/hooks',
-//     issue_events_url: 'https://api.github.com/repos/LightCITest/AA/issues/events{/number}',
-//     events_url: 'https://api.github.com/repos/LightCITest/AA/events',
-//     assignees_url: 'https://api.github.com/repos/LightCITest/AA/assignees{/user}',
-//     branches_url: 'https://api.github.com/repos/LightCITest/AA/branches{/branch}',
-//     tags_url: 'https://api.github.com/repos/LightCITest/AA/tags',
-//     blobs_url: 'https://api.github.com/repos/LightCITest/AA/git/blobs{/sha}',
-//     git_tags_url: 'https://api.github.com/repos/LightCITest/AA/git/tags{/sha}',
-//     git_refs_url: 'https://api.github.com/repos/LightCITest/AA/git/refs{/sha}',
-//     trees_url: 'https://api.github.com/repos/LightCITest/AA/git/trees{/sha}',
-//     statuses_url: 'https://api.github.com/repos/LightCITest/AA/statuses/{sha}',
-//     languages_url: 'https://api.github.com/repos/LightCITest/AA/languages',
-//     stargazers_url: 'https://api.github.com/repos/LightCITest/AA/stargazers',
-//     contributors_url: 'https://api.github.com/repos/LightCITest/AA/contributors',
-//     subscribers_url: 'https://api.github.com/repos/LightCITest/AA/subscribers',
-//     subscription_url: 'https://api.github.com/repos/LightCITest/AA/subscription',
-//     commits_url: 'https://api.github.com/repos/LightCITest/AA/commits{/sha}',
-//     git_commits_url: 'https://api.github.com/repos/LightCITest/AA/git/commits{/sha}',
-//     comments_url: 'https://api.github.com/repos/LightCITest/AA/comments{/number}',
-//     issue_comment_url: 'https://api.github.com/repos/LightCITest/AA/issues/comments{/number}',
-//     contents_url: 'https://api.github.com/repos/LightCITest/AA/contents/{+path}',
-//     compare_url: 'https://api.github.com/repos/LightCITest/AA/compare/{base}...{head}',
-//     merges_url: 'https://api.github.com/repos/LightCITest/AA/merges',
-//     archive_url: 'https://api.github.com/repos/LightCITest/AA/{archive_format}{/ref}',
-//     downloads_url: 'https://api.github.com/repos/LightCITest/AA/downloads',
-//     issues_url: 'https://api.github.com/repos/LightCITest/AA/issues{/number}',
-//     pulls_url: 'https://api.github.com/repos/LightCITest/AA/pulls{/number}',
-//     milestones_url: 'https://api.github.com/repos/LightCITest/AA/milestones{/number}',
-//     notifications_url: 'https://api.github.com/repos/LightCITest/AA/notifications{?since,all,participating}',
-//     labels_url: 'https://api.github.com/repos/LightCITest/AA/labels{/name}',
-//     releases_url: 'https://api.github.com/repos/LightCITest/AA/releases{/id}',
-//     deployments_url: 'https://api.github.com/repos/LightCITest/AA/deployments',
-//     created_at: '2017-12-07T15:21:20Z',
-//     updated_at: '2017-12-08T18:37:27Z',
-//     pushed_at: '2017-12-08T19:09:30Z',
-//     git_url: 'git://github.com/LightCITest/AA.git',
-//     ssh_url: 'git@github.com:LightCITest/AA.git',
-//     clone_url: 'https://github.com/LightCITest/AA.git',
-//     svn_url: 'https://github.com/LightCITest/AA',
-//     homepage: null,
-//     size: 0,
-//     stargazers_count: 0,
-//     watchers_count: 0,
-//     language: 'Shell',
-//     has_issues: true,
-//     has_projects: true,
-//     has_downloads: true,
-//     has_wiki: true,
-//     has_pages: false,
-//     forks_count: 0,
-//     mirror_url: null,
-//     archived: false,
-//     open_issues_count: 0,
-//     license: null,
-//     forks: 0,
-//     open_issues: 0,
-//     watchers: 0,
-//     default_branch: 'master',
-//     permissions: { admin: true, push: true, pull: true } };
+var checkRateLimit = function(){
+    return new Promise((resolve,reject)=>{
+        github.misc.getRateLimit({}).then(res=>{
+            var remaining = res.data.rate.remaining;
+            var resumeTime = new Date(res.data.rate.reset*1000);
+    
+            console.log(remaining + " GitHub API requests remaining this hour");
+    
+            if(remaining>50) resolve()
+            else reject('GitHub Rate limit exceeded, LightCI will resume at ' + resumeTime);
+        });
+    });
+}
 
-// runJob(repo).then(res=>{console.log(res)});
-getRepos().then(checkRepos).then(runJobs);
+var printError = function(err){log.warn(err)};
+
+var execute = function(){
+    checkRateLimit()
+    .then(getRepos,printError)
+    .then(checkRepos,printError)
+    .then(runJobs,printError);
+    
+    setTimeout(execute,conf.frequency);
+}
+
+execute();
