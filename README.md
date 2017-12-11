@@ -1,7 +1,7 @@
 # LightCI
 Serverless CI with GitHub.
 
-LightCI will watch your GitHub repos for changes on the master branch. For a repo to be considered it must have build script 'light.sh' in the root directory. This script must return 0 for a succesful build, or 1 for a failed build.
+When running, LightCI will watch your GitHub repos for changes on the master branch. For a repo to be considered it must have build script 'light.sh' in the root directory. This script must return 0 for a succesful build, or 1 for a failed build.
 
 When a new commit is detected on the master branch, LightCI will clone the repo, execute the build script, and record on GitHub if the build passed or failed. Success or failure is recorded in the commit history on GitHub. When a build fails, output from stdout and stderr are recorded in a new issue. When a subsequent build succeeds, prior failed build issues are closed.
 
