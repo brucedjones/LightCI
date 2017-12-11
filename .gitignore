@@ -1,6 +1,8 @@
 # Config file
 light.json
 
+work/
+
 # Logs
 logs
 *.log
