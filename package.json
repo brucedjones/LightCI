@@ -1,6 +1,6 @@
 {
   "name": "lightci",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Serverless CI with GitHub",
   "main": "index.js",
   "scripts": {

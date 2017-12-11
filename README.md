@@ -17,7 +17,7 @@ The LightCI process is similar to GitlabCI's worker process, however currently o
 {
     "authentication": {
         "type": "oauth",
-        "token": "<personal_oauth token>"
+        "token": "<personal oauth token>"
       },
     "owner":"<Username, team or organization>",
     "frequency":<Frequency with which to check for changes (ms)>
@@ -25,6 +25,8 @@ The LightCI process is similar to GitlabCI's worker process, however currently o
 ```
 
 ## Execution
+Execute the following from a directory containing a light.json configuration file. 
+
 ```bash
 $ lightci
 ```
