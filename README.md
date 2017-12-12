@@ -30,8 +30,21 @@ Execute the following from a directory containing a light.json configuration fil
 ```bash
 $ lightci
 ```
+
+or with a configuration file in a different directory:
+
+```bash
+$ lightci -c '/path/to/light.json'
+```
+
 or logging to file:
 
 ```bash
-$ lightci > lightci.log
+$ lightci > lightci.log &
+```
+
+or as a service (requires [pm2](https://www.npmjs.com/package/pm2))
+
+```bash
+$ pm2 start index.js -e err.log -o out.log -x -- -c '/path/to/light.json'
 ```
