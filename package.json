@@ -1,6 +1,6 @@
 {
   "name": "lightci",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Serverless CI with GitHub",
   "main": "index.js",
   "scripts": {
@@ -18,6 +18,9 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/brucedjones/LightCI/issues"
+  },
+  "bin": {
+    "lightci": "index.js"
   },
   "homepage": "https://github.com/brucedjones/LightCI#readme",
   "dependencies": {
