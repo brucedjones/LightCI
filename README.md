@@ -46,5 +46,5 @@ $ lightci > lightci.log &
 or as a service (requires [pm2](https://www.npmjs.com/package/pm2))
 
 ```bash
-$ pm2 start index.js -e err.log -o out.log -x -- -c '/path/to/light.json'
+$ pm2 start lightci -e err.log -o out.log -x -- -c '/path/to/light.json'
 ```
