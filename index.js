@@ -8,7 +8,7 @@ program
   .option('-c, --config </path/to/config>', 'Configuration file')
   .parse(process.argv);
 
-var conf = './light.json';
+var conf = process.cwd()+'/light.json';
 if(program.config) conf = program.config;
 
 try {
