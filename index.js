@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 const GitHubApi = require('github')
 const async = require('async')
 const clone = require('git-clone');
