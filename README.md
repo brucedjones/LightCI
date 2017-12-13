@@ -65,3 +65,11 @@ or as a service (requires [pm2](https://www.npmjs.com/package/pm2))
 ```bash
 $ pm2 start lightci -e err.log -o out.log -x -- -c '/path/to/light.json'
 ```
+
+# Troubleshooting
+### Build fails with no output
+Most likely due to the fact that github.com is not listed in the ssh known_hosts. You can overcome this by simply running 
+```bash
+$ ssh git@github.com
+```
+When prompted respond with yes. The connection will fail but github.com will be added to known_hosts. Restart LightCI.
