@@ -13,15 +13,29 @@ The LightCI process is similar to GitlabCI's worker process, however currently o
 ```npm install -g lightci ```
 
 ## light.json
-```json
+```
 {
     "authentication": {
         "type": "oauth",
         "token": "<personal oauth token>"
       },
     "owner":"<Username, team or organization>",
+    "repos":["owner/repo","owner2/repo2",...],
     "frequency":<Frequency with which to check for changes (ms)>
 }
+```
+The configuration file may specify an owner, to watch all repo's owned by this user, team or organization. Alternatively/additionally, a list of fully qualified repo names may be specified.
+
+## light.<i></i>sh
+
+A Repository is only considered for testing if it includes a script named ```light.sh```.
+
+```light.sh``` is a bash script that is responsible for building and testing your code. This script is expected to return 0 for success, or 1 for failure. A Hello World of failing build tests:
+
+```bash
+#! /bin/bash
+echo Hello World
+return 1
 ```
 
 ## Execution

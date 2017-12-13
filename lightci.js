@@ -14,12 +14,22 @@ const github = new GitHubApi();
 var getRepos = function() {
     return github.repos.getAll({per_page:100}).then(res=>{
         var repos = res.data
-    
+
         var ownedRepos = repos.reduce((prev,curr)=>{
-            if(curr.owner.login == conf.owner) prev.push(curr);
+            if(conf.owner){
+                if(curr.owner.login == conf.owner){
+                    prev.push(curr);
+                    return prev;
+                } 
+            }
+            if (conf.repos) {
+                if(conf.repos.indexOf(curr.full_name)>=0){
+                    prev.push(curr);
+                    return prev;
+                }
+            }
             return prev;
         },[])
-
         return selectReposToWatch(ownedRepos);
     })
 }
@@ -29,7 +39,7 @@ var selectReposToWatch = function (ownedRepos){
 
         var watchedRepos = [];
         async.each(ownedRepos,(repo,callback)=>{
-            github.repos.getContent({owner:conf.owner, repo:repo.name, path: ''}).then(res=>{
+            github.repos.getContent({owner:repo.owner.login, repo:repo.name, path: ''}).then(res=>{
                 var watchThis = false;
                 res.data.forEach(file=>{
                     fname = file.name.split('.');
@@ -55,13 +65,13 @@ var checkRepos = function(watchedRepos){
     return new Promise((resolve,reject)=>{
         var jobsToDo = [];
         async.each(watchedRepos,(repo, callback)=>{
-            github.repos.getCommits({owner:conf.owner, repo:repo.name}).then(res=>{
+            github.repos.getCommits({owner:repo.owner.login, repo:repo.name}).then(res=>{
                 var commit = res.data[0];
                 var mostRecentSHA = commit.sha;
                 var assignee = commit.author.login;
-                github.repos.getStatuses({owner:conf.owner, repo:repo.name,sha:mostRecentSHA,ref:mostRecentSHA}).then(res=>{
+                github.repos.getStatuses({owner:repo.owner.login, repo:repo.name,sha:mostRecentSHA,ref:mostRecentSHA}).then(res=>{
                     if(res.data.length == 0) {
-                        github.repos.createStatus({owner:conf.owner, repo:repo.name,sha:mostRecentSHA,ref:mostRecentSHA,state:'pending'})
+                        github.repos.createStatus({owner:repo.owner.login, repo:repo.name,sha:mostRecentSHA,ref:mostRecentSHA,state:'pending'})
                         repo.latestCommit = commit;
                         jobsToDo.push(repo)
                     }
@@ -81,12 +91,12 @@ var runJobs = function(jobsToDo){
     jobsToDo.forEach(repo=>{
         runJob(repo).then(buildResult=>{
             if(buildResult.success) {
-                github.repos.createStatus({owner:conf.owner, repo:repo.name,sha:repo.latestCommit.sha,ref:repo.latestCommit.sha,state:'success'});
+                github.repos.createStatus({owner:repo.owner.login, repo:repo.name,sha:repo.latestCommit.sha,ref:repo.latestCommit.sha,state:'success'});
                 closeBuildIssues(repo,repo.latestCommit.sha);
                 console.log('Build succeeded for ' + repo.full_name)
             }
             else {
-                github.repos.createStatus({owner:conf.owner, repo:repo.name,sha:repo.latestCommit.sha,ref:repo.latestCommit.sha,state:"failure"});
+                github.repos.createStatus({owner:repo.owner.login, repo:repo.name,sha:repo.latestCommit.sha,ref:repo.latestCommit.sha,state:"failure"});
                 createIssue(repo,repo.latestCommit.sha,buildResult.stdout,buildResult.stderr,repo.latestCommit.author.login);
                 console.log('Build failed for ' + repo.full_name);
                 console.log('stdout:');
@@ -103,15 +113,15 @@ var createIssue = function(repo,sha,stdout,stderr,assignee){
     var title = "Build test failed for commit "+sha.substring(0,7);
     var body = "# Build test failed\n Commit " + sha + " failed build testing\n # Output\n ## stdout\n ```\n"+stdout+"``` \n## stderr\n ```\n"+stderr+"```";
     
-    github.issues.create({owner:conf.owner, repo:repo.name, title:title, body:body, labels:["Build Failed"],assignee:assignee});
+    github.issues.create({owner:repo.owner.login, repo:repo.name, title:title, body:body, labels:["Build Failed"],assignee:assignee});
 }
 
 var closeBuildIssues = function(repo, fixedBy){
-    github.issues.getForRepo({owner:conf.owner,repo:repo.name,state:"open",labels:"Build Failed"}).then(res=>{
+    github.issues.getForRepo({owner:repo.owner.login,repo:repo.name,state:"open",labels:"Build Failed"}).then(res=>{
         var issues = res.data;
         issues.forEach(issue=>{
-            github.issues.createComment({owner:conf.owner,repo:repo.name,number:issue.number,body: "Resolved with commit " + fixedBy})
-            github.issues.edit({owner:conf.owner,repo:repo.name,number:issue.number, state:"closed"})
+            github.issues.createComment({owner:repo.owner.login,repo:repo.name,number:issue.number,body: "Resolved with commit " + fixedBy})
+            github.issues.edit({owner:repo.owner.login,repo:repo.name,number:issue.number, state:"closed"})
         })
     });
 }
@@ -167,7 +177,7 @@ var execute = function(){
 var init = function(confIn){
     conf = confIn;
     
-    if(!conf.owner) {console.error('No repo owner specified'); return 1;}
+    if(!conf.owner && !conf.repos) {console.error('No repositories of repository owner specified'); return 1;}
     if(!conf.authentication) {console.error('No authentication method specified'); return 1;}
     if(!conf.frequency) {console.warn('No frequency specified, defaulting to 10 minute checking intervals'); conf.frequency = 600000}
 
