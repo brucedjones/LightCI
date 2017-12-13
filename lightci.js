@@ -30,6 +30,14 @@ var getRepos = function() {
             }
             return prev;
         },[])
+
+        if(conf.ignore){
+            ownedRepos = ownedRepos.reduce((prev,curr)=>{
+                if(conf.ignore.indexOf(curr.full_name)<0) prev.push(curr);
+                return prev;
+            },[]);
+        }
+
         return selectReposToWatch(ownedRepos);
     })
 }

@@ -21,10 +21,13 @@ The LightCI process is similar to GitlabCI's worker process, however currently o
       },
     "owner":"<Username, team or organization>",
     "repos":["owner/repo","owner2/repo2",...],
+    "ignore":["owner3/repo3"],
     "frequency":<Frequency with which to check for changes (ms)>
 }
 ```
 The configuration file may specify an owner, to watch all repo's owned by this user, team or organization. Alternatively/additionally, a list of fully qualified repo names may be specified.
+
+Repo's are ignored completely if their fully qualified name appears in the ignore list. 
 
 ## light.<i></i>sh
 
