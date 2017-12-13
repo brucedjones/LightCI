@@ -140,7 +140,7 @@ var runJob = function(repo){
 
         var localPath = './work/' + repo.name + '/';
         fs.rmrfSync(localPath);
-        clone(repo.html_url,localPath,{},(err)=>{
+        clone(repo.ssh_url,localPath,{},(err)=>{
             if(err) console.log(err)
 
             exec('sh light.sh', {cwd:localPath}, (err, stdout, stderr) => {
