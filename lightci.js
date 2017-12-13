@@ -143,7 +143,7 @@ var runJob = function(repo){
         clone(repo.html_url,localPath,{},(err)=>{
             if(err) console.log(err)
 
-            exec('sh ' + localPath + 'light.sh', (err, stdout, stderr) => {
+            exec('sh light.sh', {cwd:localPath}, (err, stdout, stderr) => {
                 var success = true;
                 if (err) success=false;
                 
