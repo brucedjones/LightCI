@@ -19,15 +19,24 @@ The LightCI process is similar to GitlabCI's worker process, however currently o
         "type": "oauth",
         "token": "<personal oauth token>"
       },
-    "owner":"<Username, team or organization>",
+    "owner":"someOrganization",
     "repos":["owner/repo","owner2/repo2",...],
-    "ignore":["owner3/repo3"],
-    "frequency":<Frequency with which to check for changes (ms)>
+    "ignore":["owner3/repo3",...],
+    "frequency":600000
+    "name":"worker1"
 }
 ```
-The configuration file may specify an owner, to watch all repo's owned by this user, team or organization. Alternatively/additionally, a list of fully qualified repo names may be specified.
 
-Repo's are ignored completely if their fully qualified name appears in the ignore list. 
+| Field          | Type   | Description                                         |
+|----------------|--------|-----------------------------------------------------|
+| authentication | object        | Github authentication object as described [here](https://www.npmjs.com/package/github#authentication) |
+| owner `optional`         | string        | The username, team, or organization that owns the repositories to be tested |
+| repos `optional`         | string array  | A list of fully qualified repo names to explicitly check |
+| ignore `optional`         | string array  | A list of fully qualified repo names to explicitly ignore |
+| frequency `optional`      | integer | The frequency with which to poll github in ms (default: 600,000ms)                           |
+| name `optional`          | string | The name of this LightCI process |
+
+An owner or list of repos must be specified, all other optional fields are not required.
 
 ## light.<i></i>sh
 
@@ -40,6 +49,8 @@ A Repository is only considered for testing if it includes a script named ```lig
 echo Hello World
 return 1
 ```
+
+A repository may specify a named LightCI process to handle it's build testing. This is done by specifying the name of the LightCI process in the build script filename. For example, a repository with build script named `light.someWorker.sh` will only be processed by a LightCI process with name set to `someWorker` in it's `light.json` configuration file. 
 
 ## Execution
 Execute the following from a directory containing a light.json configuration file. 
@@ -65,6 +76,9 @@ or as a service (requires [pm2](https://www.npmjs.com/package/pm2))
 ```bash
 $ pm2 start lightci -e err.log -o out.log -x -- -c '/path/to/light.json'
 ```
+
+## Named processes
+If a LightCI process is named it will *only* process repositories that contain a build script where the file name corresponds to the processes name as specified in `light.json`. For example, a repository with build script named `light.someWorker.sh` will only be processed by a LightCI process with name set to `someWorker` in it's `light.json` configuration file.
 
 # Troubleshooting
 ### Build fails with no output
