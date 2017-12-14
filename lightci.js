@@ -51,7 +51,18 @@ var selectReposToWatch = function (ownedRepos){
                 var watchThis = false;
                 res.data.forEach(file=>{
                     fname = file.name.split('.');
-                    if(fname[0] == 'light' || fname[0] == conf.name && fname[1] == 'sh') watchThis = true;
+                    if(conf.name){
+                        if(fname[0] == 'light' && fname[1] == conf.name && fname[2] == 'sh') {
+                            repo.buildScript = file.name;
+                            watchThis = true;
+                        }
+                    } else {
+                        if(fname[0] == 'light' && fname[1] == 'sh'){
+                            watchThis = true;
+                            repo.buildScript = file.name;
+                            watchThis = true;
+                        }
+                    }
                 });
                 if(watchThis) watchedRepos.push(repo);
                 callback();
@@ -143,7 +154,7 @@ var runJob = function(repo){
         clone(repo.ssh_url,localPath,{},(err)=>{
             if(err) console.log(err)
 
-            exec('sh light.sh', {cwd:localPath}, (err, stdout, stderr) => {
+            exec('sh ' + repo.buildScript, {cwd:localPath}, (err, stdout, stderr) => {
                 var success = true;
                 if (err) success=false;
                 
